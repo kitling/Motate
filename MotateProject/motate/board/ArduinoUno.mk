@@ -12,9 +12,9 @@ ifeq ("$(BASE_BOARD)","uno")
 
     FIRST_LINK_SOURCES += $(wildcard ${MOTATE_PATH}/Atmel_avr/*.cpp)
 
-    CHIP = M328P
+    CHIP = atmega328p
     export CHIP
-    CHIP_LOWERCASE = m328p
+    CHIP_LOWERCASE = atmega328p
 
     BOARD_PATH = ${MOTATE_PATH}/board/ArduinoUno
     DEVICE_INCLUDE_DIRS += $(BOARD_PATH)
