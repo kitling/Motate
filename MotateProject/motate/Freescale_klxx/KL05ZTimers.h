@@ -422,9 +422,9 @@ namespace Motate {
 
 
 
-    typedef const uint8_t timer_number;
+    //typedef const uint8_t timer_number;
 
-    static const timer_number SysTickTimerNum = 0xFF;
+    //static const timer_number SysTickTimerNum = 0xFF;
     template <>
     struct Timer<SysTickTimerNum> {
         static volatile uint32_t _motateTickCount;
@@ -457,10 +457,10 @@ namespace Motate {
         // Placeholder for user code.
         static void interrupt() __attribute__ ((weak));
     };
-    extern Timer<SysTickTimerNum> SysTickTimer;
+    //extern Timer<SysTickTimerNum> SysTickTimer;
 
 
-    static const timer_number WatchDogTimerNum = 0xFE;
+    //static const timer_number WatchDogTimerNum = 0xFE;
     template <>
     struct Timer<WatchDogTimerNum> {
 
@@ -483,8 +483,8 @@ namespace Motate {
         // Placeholder for user code.
         static void interrupt() __attribute__ ((weak));
     };
-    extern Timer<WatchDogTimerNum> WatchDogTimer;
-
+    //extern Timer<WatchDogTimerNum> WatchDogTimer;
+    /*
     // Provide a Arduino-compatible blocking-delay function
     inline void delay( uint32_t microseconds )
     {
@@ -495,7 +495,7 @@ namespace Motate {
             __NOP();
         } while ( SysTickTimer.getValue() < doneTime );
     }
-
+    */
 #define MOTATE_TIMER_INTERRUPT(number) template<> void Motate::Timer<number>::interrupt()
 
 } // namespace Motate

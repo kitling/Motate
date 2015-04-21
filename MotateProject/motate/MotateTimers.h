@@ -49,9 +49,9 @@
  * Timer -> Channel relationship int he API, except it's simply a one-to-one relationship.
  */
 
-
-namespace Motate {	
-} // namespace Motate
+#ifndef __NOP // This should only be needed for Avr and Xmega.
+#define __NOP()  __asm__ __volatile__ ("nop")
+#endif // __NOP
 
 /****************************************
 	These defines allow masking of *some* (non-neccessary) functionality that is
@@ -60,6 +60,11 @@ namespace Motate {
 		MOTATE_AVRX_COMPATIBILITY -- only present functionality that is also on the AVR XMEGA architecture
 		MOTATE_SAM_COMPATIBILITY -- only present functionality that is also on the SAM architecture
 ****************************************/
+
+typedef const uint8_t timer_number;
+
+static const timer_number SysTickTimerNum = 0xFF;
+static const timer_number WatchDogTimerNum = 0xFE;
 
 #ifdef __AVR_XMEGA__
 
@@ -81,4 +86,19 @@ namespace Motate {
 #include <Freescale_klxx/KL05ZTimers.h>
 #endif
 
+namespace Motate {
+
+    extern Timer<SysTickTimerNum> SysTickTimer;
+    extern Timer<WatchDogTimerNum> WatchDogTimer;
+
+    // Provide a Arduino-compatible blocking-delay function
+    inline void delay( uint32_t microseconds ) {
+	uint32_t doneTime = SysTickTimer.getValue() + microseconds;
+
+	do {
+            __NOP();
+	} while ( SysTickTimer.getValue() < doneTime );
+    }
+
+} //namespace Motate
 #endif /* end of include guard: MOTATETIMERS_H_ONCE */
