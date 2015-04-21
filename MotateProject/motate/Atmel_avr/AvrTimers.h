@@ -34,29 +34,114 @@
 #include <util/atomic.h>
 
 namespace Motate {
-	enum TimerMode {
-		kTimerUp           = 0,
-		kTimerUpToMatch    = 1,
-		kTimerUpDown       = 2,
-		kTimerInputCapture = 3,
-	};
+    enum TimerMode {
+        kTimerUp           = 0,
+	kTimerUpToMatch    = 1,
+	kTimerUpDown       = 2,
+	kTimerInputCapture = 3,
+    };
 	
-	enum TimerChannelOutputOptions {
-		kOutputDisconnected = 0,
-		kToggleOnMatch      = 1,
-		kClearOnMatch       = 2,
-		kSetOnMatch         = 3,
-	};
+    enum TimerChannelOutputOptions {
+        kOutputDisconnected = 0,
+	kToggleOnMatch      = 1,
+	kClearOnMatch       = 2,
+	kSetOnMatch         = 3,
+    };
+    
+    enum TimerChannelInterruptOptions {
+        kInterruptsOff       = 0,
+        kInterruptOnMatchA   = 1<<0,
+	kInterruptOnMatchB   = 1<<1,
+	kInterruptOnOverflow = 1<<2,
+	kSetOnMatch          = 1<<3,
+    };
 
-	enum TimerChannelInterruptOptions {
-		kInterruptsOff       = 0,
-		kInterruptOnMatchA   = 1<<0,
-		kInterruptOnMatchB   = 1<<1,
-		kInterruptOnOverflow = 1<<2,
-		kSetOnMatch          = 1<<3,
-	};
+    struct Timer<SysTickTimerNum> {
+        static volatile uint32_t _motateTickCount;
+
+        Timer() { init(); };
+//        Timer(const TimerMode mode, const uint32_t freq) {
+//            _init();
+//        };
 
 
+        /*
+         * Code originally from rtc.c of the TinyG project:
+         * rtc_init() - initialize and start the clock
+         *
+         * This routine follows the code in app note AVR1314.
+         */
+
+        void init() {
+            _motateTickCount = 0;
+
+            OSC.CTRL |= OSC_RC32KEN_bm;							// Turn on internal 32kHz.
+            do {} while ((OSC.STATUS & OSC_RC32KRDY_bm) == 0);	// Wait for 32kHz oscillator to stabilize.
+            do {} while (RTC.STATUS & RTC_SYNCBUSY_bm);			// Wait until RTC is not busy
+
+            CLK.RTCCTRL = CLK_RTCSRC_RCOSC_gc | CLK_RTCEN_bm;	// Set internal 32kHz osc as RTC clock source
+            do {} while (RTC.STATUS & RTC_SYNCBUSY_bm);			// Wait until RTC is not busy
+
+            // the following must be in this order or it doesn;t work
+            RTC.PER = 0xfffe;	// set overflow period to maximum -- we'll use the count + out own overflow counter
+            RTC.CNT = 0;
+            RTC.COMP = 0xfffe;
+            RTC.CTRL = RTC_PRESCALER_DIV1_gc;					// no prescale (1x)
+            RTC.INTCTRL = RTC_OVFINTLVL_MED_gc;                 // interrupt on compare
+        };
+
+        // Return the current value of the counter. This is a fleeting thing...
+        uint32_t getValue() {
+            return _motateTickCount + RTC.CNT;
+        };
+
+        void _increment() { // called on overflow, every 0xffff ms
+            _motateTickCount += 0xffff;
+        };
+
+        // Placeholder for user code.
+        static void interrupt() __attribute__ ((weak));
+    };
+    extern Timer<SysTickTimerNum> SysTickTimer;
+
+    static const timer_number WatchDogTimerNum = 0xFE;
+    template <>
+    struct Timer<WatchDogTimerNum> {
+
+        Timer() { init(); };
+//        Timer(const TimerMode mode, const uint32_t freq) {
+//            init();
+//            //			setModeAndFrequency(mode, freq);
+//        };
+
+        void init() {
+        };
+
+        void disable() {
+        // FIXME
+//            WDT->WDT_MR = WDT_MR_WDDIS;
+        };
+
+        void checkIn() {
+
+        };
+
+        // Placeholder for user code.
+        static void interrupt();
+    };
+    extern Timer<WatchDogTimerNum> WatchDogTimer;
+
+    // Provide a Arduino-compatible blocking-delay function
+    inline void delay( uint32_t microseconds )
+    {
+        uint32_t doneTime = SysTickTimer.getValue() + microseconds;
+
+        do
+        {
+            // Huh! No __NOP() macro. Oh well...
+            __asm__ __volatile__ ("nop");
+        } while ( SysTickTimer.getValue() < doneTime );
+    }
 
 }
 #endif /* end of include guard: AVRTIMERS_H_ONCE */
