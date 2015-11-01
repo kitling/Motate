@@ -53,7 +53,7 @@ namespace Motate {
         kInterruptOnMatchA   = 1<<0,
 	kInterruptOnMatchB   = 1<<1,
 	kInterruptOnOverflow = 1<<2,
-	kSetOnMatch          = 1<<3,
+	kInterruptOnMatch    = 1<<3,
     };
 
     struct Timer<SysTickTimerNum> {
